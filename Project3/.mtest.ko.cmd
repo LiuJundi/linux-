@@ -1,0 +1,1 @@
+cmd_/home/ben/Linux/Project3/mtest.ko := ld -r -m elf_i386 -T /home/ben/Linux/linux-2.6.35/scripts/module-common.lds --build-id -o /home/ben/Linux/Project3/mtest.ko /home/ben/Linux/Project3/mtest.o /home/ben/Linux/Project3/mtest.mod.o

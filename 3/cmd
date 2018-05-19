@@ -1,0 +1,2 @@
+echo "findpage0x7eff60fb5000">/proc/mtest
+echo "writeval0x7eff60fb5000 123456">/proc/mtest

@@ -1,0 +1,68 @@
+diff -Nrup linux-2.6.35-origin/fs/proc/base.c linux-2.6.35-homework/fs/proc/base.c
+--- linux-2.6.35-origin/fs/proc/base.c	2010-08-02 06:11:14.000000000 +0800
++++ linux-2.6.35-homework/fs/proc/base.c	2012-03-23 19:13:50.027343000 +0800
+@@ -348,6 +348,12 @@ static int proc_pid_stack(struct seq_fil
+ }
+ #endif
+ 
++static int proc_pid_ctx(struct task_struct *task, char *buffer)
++{
++	return sprintf(buffer, "%d\n",task->ctx);
++}
++
++
+ #ifdef CONFIG_SCHEDSTATS
+ /*
+  * Provides /proc/PID/schedstat
+@@ -2638,6 +2644,7 @@ static const struct pid_entry tgid_base_
+ #ifdef CONFIG_TASK_IO_ACCOUNTING
+ 	INF("io",	S_IRUGO, proc_tgid_io_accounting),
+ #endif
++	INF("ctx", S_IRUGO, proc_pid_ctx),
+ };
+ 
+ static int proc_tgid_base_readdir(struct file * filp,
+@@ -2945,6 +2952,7 @@ static const struct pid_entry tid_base_s
+ #ifdef CONFIG_STACKTRACE
+ 	ONE("stack",      S_IRUSR, proc_pid_stack),
+ #endif
++	
+ #ifdef CONFIG_SCHEDSTATS
+ 	INF("schedstat", S_IRUGO, proc_pid_schedstat),
+ #endif
+diff -Nrup linux-2.6.35-origin/include/linux/sched.h linux-2.6.35-homework/include/linux/sched.h
+--- linux-2.6.35-origin/include/linux/sched.h	2010-08-02 06:11:14.000000000 +0800
++++ linux-2.6.35-homework/include/linux/sched.h	2012-03-23 16:47:09.913471000 +0800
+@@ -1504,6 +1504,7 @@ struct task_struct {
+ 		unsigned long memsw_bytes; /* uncharged mem+swap usage */
+ 	} memcg_batch;
+ #endif
++	int ctx;
+ };
+ 
+ /* Future-safe accessor for struct task_struct's cpus_allowed. */
+diff -Nrup linux-2.6.35-origin/kernel/fork.c linux-2.6.35-homework/kernel/fork.c
+--- linux-2.6.35-origin/kernel/fork.c	2010-08-02 06:11:14.000000000 +0800
++++ linux-2.6.35-homework/kernel/fork.c	2012-03-23 16:52:16.833957000 +0800
+@@ -1416,6 +1416,7 @@ long do_fork(unsigned long clone_flags,
+ 
+ 	p = copy_process(clone_flags, stack_start, regs, stack_size,
+ 			 child_tidptr, NULL, trace);
++	p->ctx = 0;
+ 	/*
+ 	 * Do this prior waking up the new thread - the thread pointer
+ 	 * might get invalid after that point, if the thread exits quickly.
+diff -Nrup linux-2.6.35-origin/kernel/sched.c linux-2.6.35-homework/kernel/sched.c
+--- linux-2.6.35-origin/kernel/sched.c	2010-08-02 06:11:14.000000000 +0800
++++ linux-2.6.35-homework/kernel/sched.c	2012-03-23 16:54:27.461473000 +0800
+@@ -3634,7 +3634,9 @@ need_resched_nonpreemptible:
+ 		rq->nr_switches++;
+ 		rq->curr = next;
+ 		++*switch_count;
+-
++		
++		next->ctx++;
++		
+ 		context_switch(rq, prev, next); /* unlocks the rq */
+ 		/*
+ 		 * the context switch might have flipped the stack from under
